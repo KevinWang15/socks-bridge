@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxy Manager</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Login Page -->
+        <div id="login-page" style="display: none;">
+            <div class="login-container">
+                <div class="login-logo">
+                    <h1>Proxy Manager</h1>
+                </div>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Admin Login</div>
+                    </div>
+                    <div id="login-alert" class="alert alert-danger" style="display: none;"></div>
+                    <form id="login-form">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboard-page" style="display: none;">
+            <header>
+                <div class="container">
+                    <div class="logo">Proxy Manager</div>
+                    <nav>
+                        <ul>
+                            <li><a href="#" id="nav-dashboard">Dashboard</a></li>
+                            <li><a href="#" id="nav-logout">Logout</a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </header>
+
+            <main>
+                <div class="container">
+                    <div class="dashboard-header">
+                        <div class="dashboard-title">HTTPS Proxy Listeners</div>
+                        <div class="action-buttons">
+                            <button id="add-listener-btn" class="btn btn-success">Add New Listener</button>
+                            <button id="reload-config-btn" class="btn btn-secondary">Reload Configuration</button>
+                        </div>
+                    </div>
+
+                    <div id="alert-container"></div>
+
+                    <div class="card">
+                        <table id="listeners-table">
+                            <thead>
+                                <tr>
+                                    <th>Port</th>
+                                    <th>Username</th>
+                                    <th>SOCKS Host</th>
+                                    <th>SOCKS Port</th>
+                                    <th>Export cmd</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Listeners will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Modal for Add/Edit Listener -->
+        <div class="modal-backdrop" id="listener-modal-backdrop">
+            <div class="modal" id="listener-modal">
+                <div class="modal-header">
+                    <div class="modal-title" id="listener-modal-title">Add New Listener</div>
+                    <button class="modal-close" id="listener-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="listener-form">
+                        <div class="form-group">
+                            <label for="listener-port">Port</label>
+                            <input type="number" id="listener-port" name="port" required min="1" max="65535">
+                        </div>
+                        <div class="form-group">
+                            <label for="listener-username">Username</label>
+                            <input type="text" id="listener-username" name="USERNAME">
+                        </div>
+                        <div class="form-group">
+                            <label for="listener-password">Password</label>
+                            <input type="password" id="listener-password" name="PASSWORD">
+                        </div>
+                        <div class="form-group">
+                            <label for="listener-socks-host">SOCKS Host</label>
+                            <input type="text" id="listener-socks-host" name="SOCKS_HOST">
+                        </div>
+                        <div class="form-group">
+                            <label for="listener-socks-port">SOCKS Port</label>
+                            <input type="number" id="listener-socks-port" name="SOCKS_PORT" min="1" max="65535">
+                        </div>
+                        <div class="form-group">
+                            <label for="listener-socks-username">SOCKS Username</label>
+                            <input type="text" id="listener-socks-username" name="SOCKS_USERNAME">
+                        </div>
+                        <div class="form-group">
+                            <label for="listener-socks-password">SOCKS Password</label>
+                            <input type="password" id="listener-socks-password" name="SOCKS_PASSWORD">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="listener-modal-cancel">Cancel</button>
+                    <button class="btn btn-primary" id="listener-modal-save">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for Delete Confirmation -->
+        <div class="modal-backdrop" id="delete-modal-backdrop">
+            <div class="modal" id="delete-modal">
+                <div class="modal-header">
+                    <div class="modal-title">Confirm Delete</div>
+                    <button class="modal-close" id="delete-modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this proxy listener?</p>
+                    <p>Port: <span id="delete-listener-port"></span></p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="delete-modal-cancel">Cancel</button>
+                    <button class="btn btn-danger" id="delete-modal-confirm">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>

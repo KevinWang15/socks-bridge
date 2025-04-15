@@ -1,0 +1,6 @@
+.idea
+node_modules
+/config.js
+*.pem
+package-lock.json
+certs
