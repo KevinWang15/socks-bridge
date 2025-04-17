@@ -1,27 +1,19 @@
 module.exports = {
-    domainName: 'example.com',
-    tlsCert: './certs/cert.pem',
-    tlsKey: './certs/key.pem',
+    tlsKey: "/app/certs/key.pem",
+    tlsCert: "/app/certs/cert.pem",
+    admin: {
+        username: "admin",
+        password: "admin123"
+    },
     httpsProxyListeners: [
         {
-            USERNAME: 'user1',
-            PASSWORD: 'password1',
-
-            port: 8443,
-            SOCKS_HOST: '127.0.0.1',
-            SOCKS_PORT: 1080,
-            SOCKS_USERNAME: 'user1',
-            SOCKS_PASSWORD: 'password1'
-        },
-        {
-            USERNAME: 'user1',
-            PASSWORD: 'password1',
-
-            port: 9443,
-            SOCKS_HOST: '127.0.0.1',
-            SOCKS_PORT: 1080,
-            SOCKS_USERNAME: '',
-            SOCKS_PASSWORD: ''
+            port: 1905,
+            USERNAME: "proxy-username",
+            PASSWORD: "proxy-password",
+            SOCKS_HOST: "xxx.yyy",
+            SOCKS_PORT: 30006,
+            SOCKS_USERNAME: "socks-username",
+            SOCKS_PASSWORD: "socks-password"
         }
     ]
 };
