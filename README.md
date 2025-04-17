@@ -1,162 +1,171 @@
-# socks-bridge
+# SOCKS Bridge
+*A self‑hosted manager for HTTPS CONNECT proxies that tunnel traffic through SOCKS5.*
 
-socks-bridge is a Node.js project that exposes one or more **HTTPS CONNECT proxies** on specified ports and forwards all traffic through SOCKS5. It’s particularly useful for scenarios where you need multiple HTTPS proxy endpoints that each tunnel traffic through different SOCKS5 configurations.
+---
+
+## Table of Contents
+1. [Features](#features)
+2. [Quick Start (with Docker)](#quick-start-with-docker)
+3. [Configuration](#configuration)
+4. [Management UI](#management-ui)
+5. [Security Hardening](#security-hardening)
+6. [Development & Building](#development--building)
+7. [Contributing](#contributing)
+8. [License](#license)
+
+---
 
 ## Features
 
-- **Multiple HTTPS Listeners**  
-  Spin up multiple proxy servers, each on a different port, with distinct SOCKS5 settings.
-- **HTTPS CONNECT Support**  
-  Tunnels TLS traffic through a secure channel and forwards via SOCKS5.
-- **Optional Basic Authentication**  
-  Prompt users for credentials before allowing them to proxy traffic.
-- **Direct or SOCKS5 Forwarding**  
-  If no SOCKS server is specified for a port, the connection will be made directly.
-- **Domain Filtering (stub)**  
-  A placeholder function is included if you want to filter/allow specific domains.
-
-## Table of Contents
-
-1. [Requirements](#requirements)
-2. [Installation](#installation)
-3. [Usage](#usage)
-4. [Configuration](#configuration)
-5. [Example](#example)
-6. [Limitations](#limitations)
-7. [License](#license)
+- **HTTPS CONNECT proxy farm** &nbsp;— run multiple listeners, each with its own credentials and upstream SOCKS5 endpoint.
+- **Web‑based dashboard** &nbsp;— add, edit, or delete listeners and trigger live reloads without restarting the container.
+- **Hot‑reloading** &nbsp;— edits to `config.js` (or via the UI) automatically respawn the affected proxy servers in seconds.
+- **Docker‑first design** &nbsp;— a single, minimal image (<60MB) ready for any platform that runs Docker.
 
 ---
 
-## Requirements
+## Quick Start with Docker
 
-- **Node.js 14+** (or higher)
-- **npm** (or `yarn`)
-- A valid **TLS certificate** and **private key** (for HTTPS)
+### Prerequisites
+- **Docker Engine 20.10+** and **Docker Compose v2**
+- A **TLS certificate** (`certificate.crt`) and **private key** (`private.key`) that your clients trust
 
-If you do not need Basic Auth or domain-based filtering, you can remove those parts from the code.
+### 1&nbsp;— Clone the repository
+```bash
+git clone https://github.com/KevinWang15/socks-bridge.git
+cd socks-bridge
+```
 
----
+### 2&nbsp;— Add your TLS materials
+```bash
+mkdir -p certs
+cp /path/to/certificate.crt certs/
+cp /path/to/private.key    certs/
+```
 
-## Installation
+### 3&nbsp;— Create or edit `config.js`
+```javascript
+// config.js
+module.exports = {
+  // TLS paths (inside the container)
+  tlsKey : '/app/certs/private.key',
+  tlsCert: '/app/certs/certificate.crt',
 
-1. **Clone** the repository:
-   ```bash
-   git clone https://github.com/KevinWang15/socks-bridge.git
-   cd socks-bridge
-   ```
+  // Management UI credentials
+  admin: {
+    username: 'admin',
+    password: 'change‑me‑now!'
+  },
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+  // One or more HTTPS proxy listeners
+  httpsProxyListeners: [
+    {
+      port  : 8443,            // HTTPS port exposed to clients
+      USERNAME: 'proxyUser',   // (optional) basic‑auth credentials
+      PASSWORD: 'proxyPass',   //
 
-3. **Obtain/Copy your TLS certificate and key** into the project folder or a known location.
+      SOCKS_HOST: 'localhost', // Upstream SOCKS5 server
+      SOCKS_PORT: 1080,
+      SOCKS_USERNAME: '',      // (optional)
+      SOCKS_PASSWORD: ''       // (optional)
+    }
+  ]
+};
+```
 
----
+> **Tip:** You may mount `config.js` from the host (see *docker‑compose.yml*) or bake it into a custom image.
 
-## Usage
+### 4&nbsp;— Launch the stack
+```bash
+docker compose up -d
+```
 
-1. **Configure** your server using `config.js` (see [Configuration](#configuration)).
-2. **Run** the proxy:
-   ```bash
-   node index.js
-   ```
-3. **Point** your client (cURL, browser, etc.) at the HTTPS proxy:
-
-    - For example, to connect through the proxy on `localhost:8443`:
-      ```bash
-      curl --proxy https://username:password@localhost:8443 https://example.com
-      ```
-    - Make sure the client trusts your TLS certificate if it’s self-signed.
+### 5&nbsp;— Open the dashboard
+Visit **https://&lt;host&gt;:35443** (default) and log in with the admin credentials you set above.
 
 ---
 
 ## Configuration
 
-Edit `config.js` to adjust settings. By default, it should export:
+| Key | Type | Description |
+|-----|------|-------------|
+| `tlsKey` / `tlsCert` | *string* | Absolute paths (inside the container) to your PEM‑encoded key and certificate. |
+| `admin.username` / `admin.password` | *string* | Credentials for the management UI (JWT‑based). |
+| `httpsProxyListeners[]` | *array* | Each object spawns an independent HTTPS CONNECT proxy. |
 
-```js
-module.exports = {
-  domainName: 'example.com',        // (Optional) domain name for SNI usage
-  tlsCert: './certs/cert.pem',      // Path to your certificate file
-  tlsKey: './certs/key.pem',        // Path to your private key file
-  httpsProxyListeners: [
-    {
-      port: 8443,
-      SOCKS_HOST: '127.0.0.1',
-      SOCKS_PORT: 1080,
-      SOCKS_USERNAME: 'user1',
-      SOCKS_PASSWORD: 'password1'
-    },
-    {
-      port: 9443,
-      SOCKS_HOST: '127.0.0.1',
-      SOCKS_PORT: 1080,
-      SOCKS_USERNAME: '',
-      SOCKS_PASSWORD: ''
-    }
-  ]
-};
-```
+### Proxy Listener Schema
+| Field | Required | Notes |
+|-------|----------|-------|
+| `port` | ✅ | TCP port that the listener binds (must be unique). |
+| `USERNAME` / `PASSWORD` | ⬜ | If omitted, the listener is **open** (no basic‑auth). |
+| `SOCKS_HOST` / `SOCKS_PORT` | ⬜ | If omitted, traffic goes **directly** to the target host. |
+| `SOCKS_USERNAME` / `SOCKS_PASSWORD` | ⬜ | Credentials for the upstream SOCKS5 server (if it requires auth). |
 
-- **`tlsCert` / `tlsKey`:** paths to your TLS certificate and private key.
-- **`httpsProxyListeners`:** an array of objects describing one HTTPS listener per port.
-    - **`port`:** The TCP port to listen on for HTTPS/CONNECT requests.
-    - **`SOCKS_HOST`, `SOCKS_PORT`:** The SOCKS5 server details.
-    - **`SOCKS_USERNAME`, `SOCKS_PASSWORD`:** Optional. Basic authentication credentials for the SOCKS proxy.
-    - If you leave them blank, you can either skip authentication or modify how the code handles it.
+Edit the file directly or use the **Add Listener** button in the dashboard. Changes are hot‑reloaded.
 
 ---
 
-## Example
+## Management UI
 
-**Example `config.js`:**
+![Screenshot of dashboard showing a list of listeners and action buttons](docs/assets/dashboard.png)
 
-```js
-module.exports = {
-  domainName: 'my-proxy.local',
-  tlsCert: './certs/cert.pem',
-  tlsKey: './certs/key.pem',
-  httpsProxyListeners: [
-    {
-      port: 8443,
-      SOCKS_HOST: '127.0.0.1',
-      SOCKS_PORT: 1080,
-      SOCKS_USERNAME: 'user1',
-      SOCKS_PASSWORD: 'pass1'
-    },
-    {
-      port: 9443,
-      SOCKS_HOST: '127.0.0.1',
-      SOCKS_PORT: 1080,
-      SOCKS_USERNAME: '',
-      SOCKS_PASSWORD: ''
-    }
-  ]
-};
-```
+| Action | Description |
+|--------|-------------|
+| **Add Listener** | Opens a modal to create a new HTTPS listener. |
+| **Edit / Delete** | Modify or remove an existing listener. |
+| **Reload Configuration** | Forces a manual reload (automatic reload also occurs on any change). |
+| **Copy Export Cmd** | Copies `export https_proxy=https://…` to your clipboard for quick client setup. |
 
-**Running the Proxy:**
+---
+
+## Security Hardening
+
+> SOCKS Bridge is production‑grade — but *your* deployment practices determine how secure it really is.
+
+1. **Replace the default admin password** immediately.
+2. **Use a trusted certificate** so clients can verify the proxy; self‑signed is fine for internal use.
+3. **Restrict access** to the management UI (firewall, VPN, or network ACLs).
+4. **Run behind a reverse proxy** (nginx, Traefik, Caddy) if you need additional protections like rate‑limiting or IP allow‑lists.
+5. **Keep images up to date** — pull the latest tag or rebuild on a schedule.
+
+---
+
+## Development & Building
 
 ```bash
-node index.js
+# Install dev dependencies
+npm install
+
+# Auto‑reload backend during development
+npm run dev
+
+# Build the Docker image locally
+docker build -t socks-bridge:dev .
 ```
 
-You should see:
+### Folder Structure
 ```
-HTTPS Proxy listening on port 8443
-HTTPS Proxy listening on port 9443
-All configured HTTPS proxies are up and running...
+├─ api/            # REST endpoints (auth & config)
+├─ middleware/     # Express middlewares
+├─ public/         # Static SPA assets (HTML/CSS/JS)
+├─ utils/          # Helper modules (config, proxy, TLS)
+├─ server.js       # Entry point (Express + HTTPS)
+└─ docker-compose.yml
 ```
 
-**Using cURL with Basic Auth:**
+---
 
-```bash
-curl --proxy https://user1:pass1@localhost:8443 https://example.com
-```
+## Contributing
+Pull requests, bug reports, and feature ideas are welcome! Please open an issue to discuss your proposal before submitting large changes.
+
+1. Fork the repository and create your branch: `git checkout -b feat/my-feature`
+2. Commit your changes: `git commit -am 'Add new feature'`
+3. Push to the branch: `git push origin feat/my-feature`
+4. Open a PR against **main**.
 
 ---
 
 ## License
 
-MIT License
+MIT
+

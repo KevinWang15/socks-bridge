@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  socks-bridge:
+    image: kevinwang15/socks-bridge:latest
+    container_name: socks-bridge
+    network_mode: host
+    volumes:
+      - ./config.js:/app/config.js
+      - ./certs:/app/certs:ro
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
