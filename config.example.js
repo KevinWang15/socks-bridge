@@ -1,6 +1,9 @@
 module.exports = {
     tlsKey: "/app/certs/key.pem",
     tlsCert: "/app/certs/cert.pem",
+    // When true, returns 200 OK with empty JSON instead of 407 for auth failures
+    // This helps mask the fact that it's a proxy server, but breaks standard browser proxy usage
+    maskProxyAuth: false,
     admin: {
         username: "admin",
         password: "admin123"

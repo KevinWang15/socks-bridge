@@ -20,6 +20,7 @@
 - **HTTPS CONNECT proxy farm** &nbsp;— run multiple listeners, each with its own credentials and upstream SOCKS5 endpoint.
 - **Web‑based dashboard** &nbsp;— add, edit, or delete listeners and trigger live reloads without restarting the container.
 - **Hot‑reloading** &nbsp;— edits to `config.js` (or via the UI) automatically respawn the affected proxy servers in seconds.
+- **Stealth mode** &nbsp;— optional authentication masking to disguise the server as a regular website instead of a proxy.
 - **Docker‑first design** &nbsp;— a single, minimal image (<60MB) ready for any platform that runs Docker.
 
 ---
@@ -50,6 +51,10 @@ module.exports = {
   // TLS paths (inside the container)
   tlsKey : '/app/certs/private.key',
   tlsCert: '/app/certs/certificate.crt',
+
+  // When true, authentication failures return 200 OK with empty JSON
+  // instead of 407, masking the proxy but breaking browser compatibility
+  maskProxyAuth: false,
 
   // Management UI credentials
   admin: {
@@ -90,6 +95,7 @@ Visit **https://&lt;host&gt;:35443** (default) and log in with the admin credent
 | Key | Type | Description |
 |-----|------|-------------|
 | `tlsKey` / `tlsCert` | *string* | Absolute paths (inside the container) to your PEM‑encoded key and certificate. |
+| `maskProxyAuth` | *boolean* | When `true`, authentication failures return a 200 OK with empty JSON instead of 407 errors. This helps mask the server as a proxy but breaks standard browser proxy usage. Default: `false`. |
 | `admin.username` / `admin.password` | *string* | Credentials for the management UI (JWT‑based). |
 | `httpsProxyListeners[]` | *array* | Each object spawns an independent HTTPS CONNECT proxy. |
 

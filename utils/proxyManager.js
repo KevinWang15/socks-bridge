@@ -37,11 +37,20 @@ async function handleConnect (clientReq, clientSocket, head, listener) {
 
   const profile = authenticate(clientReq, listener);
   if (!profile) {
-    clientSocket.write(
-        'HTTP/1.1 407 Proxy Authentication Required\r\n' +
-        'Proxy-Authenticate: Basic realm="Proxy"\r\n' +
-        'Connection: close\r\n\r\n'
-    );
+    const config = readConfig();
+    if (config.maskProxyAuth) {
+      clientSocket.write(
+          'HTTP/1.1 200 OK\r\n' +
+          'Content-Type: application/json\r\n' +
+          'Connection: close\r\n\r\n{}'
+      );
+    } else {
+      clientSocket.write(
+          'HTTP/1.1 407 Proxy Authentication Required\r\n' +
+          'Proxy-Authenticate: Basic realm="Proxy"\r\n' +
+          'Connection: close\r\n\r\n'
+      );
+    }
     return clientSocket.end();
   }
 
@@ -100,10 +109,18 @@ async function handleConnect (clientReq, clientSocket, head, listener) {
 async function handleRequest (clientReq, clientRes, listener) {
   const profile = authenticate(clientReq, listener);
   if (!profile) {
-    clientRes.writeHead(407, {
-      'Proxy-Authenticate': 'Basic realm="Proxy"', Connection: 'close'
-    });
-    return clientRes.end();
+    const config = readConfig();
+    if (config.maskProxyAuth) {
+      clientRes.writeHead(200, {
+        'Content-Type': 'application/json', Connection: 'close'
+      });
+      return clientRes.end('{}');
+    } else {
+      clientRes.writeHead(407, {
+        'Proxy-Authenticate': 'Basic realm="Proxy"', Connection: 'close'
+      });
+      return clientRes.end();
+    }
   }
 
   let url;
